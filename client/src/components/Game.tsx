@@ -24,6 +24,8 @@ import {
 import { ChatMessageI } from '../helpers/interfaces';
 import Chat from "./Chat";
 
+const BASE_URL = "http://0.0.0.0:8080/http://192.168.1.103";
+
 const Container = styled.div`
   display: grid;
   grid-gap: 10px;
@@ -83,7 +85,7 @@ interface StateI {
 class Game extends React.Component<PropsI, StateI> {
   private socket: any;
   state = {
-    gamePhase: NOT_STARTED,
+    gamePhase: PLAY,
     myTurn: true,
     needsToRoll: true,
     dice: [-1, -1],
@@ -139,7 +141,7 @@ class Game extends React.Component<PropsI, StateI> {
       } else {
         highlightedHome0 = validSpikes.filter(s => s <= OPPONENT_HOME).length > 0;
       }
-      
+
       this.setState({
         highlightedPiece: [0, pieceI],
         highlightedSpikes: validSpikes,
@@ -170,10 +172,25 @@ class Game extends React.Component<PropsI, StateI> {
    * Gets random dice numbers
    */
   rollDice = () => {
-    this.socket.emit('roll-dice');
-    this.setState({
-      needsToRoll: false
-    });
+    fetch(BASE_URL + "/BackGammonBeta/UIService/RollDice.php", {
+      method: 'GET',
+        headers: {
+          "Origin": "*"
+        }
+    }).then(response => response.text())
+        .then(data => {
+            console.log("Dice:", data)
+            let tmpDice = data.split(",");
+            let parsedDice = [];
+            for(let i = 0; i < tmpDice.length; i++) {
+              parsedDice.push(parseInt(tmpDice[i]))
+            }
+            this.setState({
+                needsToRoll: false,
+              dice: parsedDice,
+              movesLeft: parsedDice
+            })
+        });
   }
 
   /**
@@ -358,12 +375,6 @@ class Game extends React.Component<PropsI, StateI> {
             highlightedHome1={highlightedHome1}
           />
           <GameStatus message={message} />
-          {gamePhase === NOT_STARTED &&
-            <>
-              {needsToSetName && <GameStatus message='Set your name in the chat window my typing "/setname" followed by your name' />}
-              {opponentNeedsToSetName && <GameStatus message="Waiting for the opponent to set their name" />}
-            </>
-          }
           <ButtonContainer>
             {gamePhase === NOT_STARTED && null}
             {gamePhase === INITIAL_ROLLS && (
@@ -376,14 +387,6 @@ class Game extends React.Component<PropsI, StateI> {
               <Button handleClick={this.startNewGame} disabled={false} text="Start New Game" />
             )}
           </ButtonContainer>
-        </div>
-        <div className="chat-container">
-          <Chat
-            messages={chatMessages}
-            addNewMessage={this.sendChatMessage}
-            myName={myName}
-            opponentName={opponentName}
-          />
         </div>
       </Container>
     );

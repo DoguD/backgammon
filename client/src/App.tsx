@@ -5,17 +5,11 @@ import StartScreen from './components/StartScreen';
 import Analytics from './components/Analytics';
 
 const App = () => {
-  const pathname = window.location.pathname;
-
-  if (pathname === '/analytics') return <Analytics />
-  
-  const displayGame = pathname !== '/';
-
-  return (
-    <div>
-      {displayGame ? <Game /> : <StartScreen />}
-    </div>
-  );
+    return (
+        <div style={{display: "flex", alignItems: "center", justifyContent: "center"}}>
+            <Game/>
+        </div>
+    );
 };
 
 export default App;
