@@ -166,7 +166,98 @@ class Game extends React.Component<PropsI, StateI> {
      * @param soSpike the spike to move to
      */
     movePiece = (piece: number, toSpike: number) => {
-        this.socket.emit('move-piece', {piece, toSpike});
+        console.log(piece, toSpike);
+        fetch(BASE_URL + "/BackGammonBeta/UIService/MoveButton.php", {
+            method: 'POST',
+            headers: {
+                "Origin": "*",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: new URLSearchParams({
+                'GameId': 'Some value',
+                'another_param': 'Another value'
+            })
+        }).then(response => response.text())
+            .then(data => {
+                console.log("SERVER")
+                console.log(data)
+                let parsedData = (JSON.parse(data));
+                console.log(typeof parsedData);
+                console.log(parsedData.BoardInfo);
+                console.log(parsedData.BoardInfo.BoardPosition);
+                let serverPiecesTmp = parsedData.BoardInfo.BoardPosition.split(',');
+                let serverPieces = []
+                for (let i = 0; i < serverPiecesTmp.length; i++) {
+                    serverPieces.push(parseInt(serverPiecesTmp[i]));
+                }
+                console.log("UI")
+                console.log(this.state.pieces);
+
+                let whites = [];
+                let blacks = [];
+
+                for (let i = 0; i < serverPieces.length; i++) {
+                    if (serverPieces[i] > 0) {
+                        for (let j = 0; j < serverPieces[i]; j++) {
+                            whites.push(i);
+                        }
+                    }
+                    if (serverPieces[i] < 0) {
+                        for (let j = 0; j < -serverPieces[i]; j++) {
+                            blacks.push(i);
+                        }
+                    }
+                }
+                this.setState({
+                    pieces: [whites, blacks]
+                })
+            });
+    }
+
+    /** Get Board Info
+     *
+     */
+    getBoardInfo = (gameID: number) => {
+        fetch(BASE_URL + "/BackGammonBeta/UIService/GetBoard.php?GameID=" + gameID, {
+            method: 'GET',
+            headers: {
+                "Origin": "*"
+            }
+        }).then(response => response.text())
+            .then(data => {
+                console.log("SERVER")
+                console.log(data)
+                let parsedData = (JSON.parse(data));
+                console.log(typeof parsedData);
+                console.log(parsedData.BoardInfo);
+                console.log(parsedData.BoardInfo.BoardPosition);
+                let serverPiecesTmp = parsedData.BoardInfo.BoardPosition.split(',');
+                let serverPieces = []
+                for (let i = 0; i < serverPiecesTmp.length; i++) {
+                    serverPieces.push(parseInt(serverPiecesTmp[i]));
+                }
+                console.log("UI")
+                console.log(this.state.pieces);
+
+                let whites = [];
+                let blacks = [];
+
+                for (let i = 0; i < serverPieces.length; i++) {
+                    if (serverPieces[i] > 0) {
+                        for (let j = 0; j < serverPieces[i]; j++) {
+                            whites.push(i);
+                        }
+                    }
+                    if (serverPieces[i] < 0) {
+                        for (let j = 0; j < -serverPieces[i]; j++) {
+                            blacks.push(i);
+                        }
+                    }
+                }
+                this.setState({
+                    pieces: [whites, blacks]
+                })
+            });
     }
 
     /**
@@ -255,24 +346,12 @@ class Game extends React.Component<PropsI, StateI> {
 
     startNewGame = () => {
         this.socket.emit('play-again');
-    }
 
-    sendChatMessage = (message: ChatMessageI) => {
-        if (message.message.substring(0, 8) === '/setname') {
-            // Set the player's name
-            const name = message.message.substring(8).trim();
-            this.socket.emit('set-name', name);
-            this.setState({myName: name});
-        } else {
-            // Send the chat message
-            const {chatMessages}: { chatMessages: ChatMessageI[] } = this.state;
-            chatMessages.push(message);
-            this.socket.emit('chat', message.message);
-            this.setState({chatMessages});
-        }
     }
 
     componentDidMount() {
+        console.log("New game started");
+        this.getBoardInfo(1);
         this.socket = io.connect('/');
         const pathname = window.location.pathname;
         const code = pathname.substring(1);
